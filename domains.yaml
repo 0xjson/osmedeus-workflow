@@ -1,0 +1,36 @@
+name: domains
+desc: Running normal routine but without subdomain enumeration
+type: general
+validator: domain-file
+
+# Usage: osmedeus scan -f domains -t domains_file.txt
+# Usage: osmedeus scan -f domains -t domains_file.txt -w custom_ws
+
+routines:
+  - flow: 'custom'
+    modules:
+      - skip-subdomain
+  - modules:
+      - probing
+  - modules:
+      - ssame
+  - modules:
+      - screenshot
+  - modules:
+      - fingerprint
+      - spider
+      - sto
+  - modules:
+      - archive
+      - ipspace
+  - modules:
+      - vulnscan
+  - modules:
+      - vhostscan
+  - modules:
+      - portscan
+  - modules:
+      - dirbscan
+  # push final result again
+  - modules:
+      - summary

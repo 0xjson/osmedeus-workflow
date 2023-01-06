@@ -1,0 +1,17 @@
+name: fast
+desc: Running fast routine for summary data only
+type: general
+validator: domain
+
+routines:
+  - modules:
+      - subdomain
+  - modules:
+      - probing
+  - modules:
+      - ssame
+  - modules:
+      - fingerprint
+      - ipspace
+  - modules:
+      - summary

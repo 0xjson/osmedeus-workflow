@@ -1,0 +1,19 @@
+name: urls
+desc: Scanning for List of Domains, URLs or IP Address
+type: urls
+
+usage: |
+    osmedeus scan -f urls -t urls_file.txt
+    osmedeus scan -f urls -t list_of_domains.txt -p 'skipSpidering=true'
+    osmedeus scan -f urls -t urls_file.txt -w custom_ws
+    # Change the wordlists
+    osmedeus scan -f urls -t cidr_file.txt -p 'wordlists={{Data}}/wordlists/content/medium.txt'
+
+routines:
+  - modules:
+      - probe
+  - modules:
+      - spider
+      - vulnscan
+  - modules:
+      - dirbscan

@@ -1,0 +1,44 @@
+name: spider
+desc: Crawling links in http hosts
+
+report:
+  final:
+    - "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+
+params:
+  - httpFile: "{{Output}}/portscan/success-http-running.txt"
+  - linkFile: "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+  - spiderTimeout: "3h"
+  - spiderThreads: "{{ threads * 2 }}"
+  - spiderPrallel: "{{ threads }}"
+  - crawlingTime: "30"
+  - skipSpidering: "false"
+
+pre_run:
+  - CreateFolder("{{Output}}/linkfinding")
+
+steps:
+  - conditions:
+      - '"{{skipSpidering}}" != "true"'
+    scripts:
+      - ErrPrintf("Filter", "Skipping spidering")
+      - Exit(1)
+
+  # get only 200 status code
+  - commands:
+    - "cat {{Output}}/portscan/http-overview-{{Workspace}}.txt | grep ':200' | jq -r '.url' | sort -u  > {{httpFile}}"
+
+  - required:
+      - "{{Binaries}}/katana"
+      - "{{httpFile}}"
+    commands:
+      - "timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -list {{httpFile}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} >> {{linkFile}}"
+    scripts:
+      - SortU("{{linkFile}}")
+
+  # Print the file if there is not too much data
+  - conditions:
+      - "FileLength('{{linkFile}}') < 10000"
+    scripts:
+      - Cat("{{linkFile}}")
+

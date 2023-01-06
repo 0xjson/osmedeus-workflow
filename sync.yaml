@@ -1,0 +1,15 @@
+name: sync
+desc: Sync result based on git
+type: sync
+skip-indexed: true
+
+routines:
+  - modules:
+      - pull
+  - modules:
+      - sync
+  - modules:
+      - report
+      - storages
+  - modules:
+      - summary

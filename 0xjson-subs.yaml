@@ -1,0 +1,12 @@
+name: 0xjson-subs
+desc: Running subdomain enumeration and dns resolving only
+type: 0xjson-custom
+validator: domain
+
+routines:
+  - modules:
+      - subdomain
+  - modules:
+      - probing
+  - modules:
+      - summary

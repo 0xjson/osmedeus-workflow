@@ -1,0 +1,44 @@
+name: chaos
+desc: Scanning for subdomain
+
+report:
+  final:
+    - "{{Output}}/subdomain/final-{{Workspace}}.txt"
+    - "{{Output}}/subdomain/more-{{Workspace}}.txt"
+
+# {{Output}} == {{Workspaces}} + {{Workspace}} but strip "/" char
+pre_run:
+  - CreateFolder("{{Storages}}/subdomain/{{Workspace}}/")
+  - CreateFolder("{{Storages}}/summary/{{Workspace}}/")
+  - CreateFolder("{{Output}}/subdomain/")
+
+params:
+  - chaosKey: ${CHAOS_API_KEY}
+
+steps:
+  - required:
+      - "{{Binaries}}/chaos-client"
+    commands:
+      - "{{Binaries}}chaos-client -d {{Target}} -key {{chaosKey}} -o {{Output}}/subdomain/{{Workspace}}-chaos.txt"
+
+  # cleaning some result
+  - scripts:
+      - Append("{{Output}}/subdomain/sum-{{Workspace}}.txt", "{{Output}}/subdomain/{{Workspace}}-chaos.txt")
+
+
+  # get more related domains
+  - required:
+      - "{{Binaries}}/metabigor"
+    commands:
+      - "echo '{{Org}}' | metabigor cert --json -o {{Output}}/subdomain/more-json-{{Workspace}}.txt > /dev/null 2>&1"
+    scripts:
+      - ExecCmd("cat {{Output}}/subdomain/more-json-{{Workspace}}.txt | jq -r '.Domain' | sed 's/\*.//g' | sort -u > {{Output}}/subdomain/more-{{Workspace}}.txt")
+
+  - scripts:
+      - Append("{{Storages}}/summary/{{Workspace}}/subdomain-{{Workspace}}.txt", "{{Output}}/subdomain/final-{{Workspace}}.txt")
+      - SortU("{{Storages}}/summary/{{Workspace}}/subdomain-{{Workspace}}.txt")
+      - SortU("{{Output}}/subdomain/final-{{Workspace}}.txt")
+
+post_run:
+  # delete all files in workspaces folder except a file lists in report section
+  - Cleaning("{{Output}}/subdomain/")

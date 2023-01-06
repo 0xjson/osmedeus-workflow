@@ -1,0 +1,12 @@
+name: subdomain-enum
+desc: Running subdomain enumeration and dns resolving only
+type: general
+validator: domain
+
+routines:
+  - modules:
+      - subdomain
+  - modules:
+      - probing
+  - modules:
+      - summary

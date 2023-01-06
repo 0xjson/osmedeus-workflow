@@ -1,0 +1,14 @@
+name: ssame
+desc: Detect same site by calculate content structure
+
+report:
+  final:
+    - "{{Output}}/probing/diffhttp-{{Workspace}}.txt"
+
+params:
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+
+steps:
+  # in case we mess up this module
+  - commands:
+      - "cp {{httpFile}} {{Output}}/probing/diffhttp-{{Workspace}}.txt"

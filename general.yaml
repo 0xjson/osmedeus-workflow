@@ -1,0 +1,33 @@
+name: general
+desc: Running default reconnaissance routine
+type: general
+validator: domain
+
+routines:
+  - modules:
+      - subdomain
+  - modules:
+      - probing
+  - modules:
+      - ssame
+  - modules:
+      - screenshot
+  - modules:
+      - fingerprint
+      - spider
+      - sto
+  - modules:
+      - archive
+      - ipspace
+  - modules:
+      - vulnscan
+  - modules:
+      - portscan
+  - modules:
+      - port-fingerprint
+      - pvulnscan
+  - modules:
+      - dirbscan
+  # push final result again
+  - modules:
+      - summary

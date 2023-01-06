@@ -1,0 +1,39 @@
+name: dirbscan
+desc: Run Dirbscan
+
+report:
+  final:
+    - "{{Output}}/directory/beautify-{{Workspace}}.txt"
+
+params:
+  - httpFile: "{{Output}}/probe/http-{{Workspace}}.txt"
+  - wordlists: "{{Data}}/wordlists/content/small.txt"
+  - recursion: '0'
+  - ffThreads: '{{ threads * 2 }}' # threads for single site
+  - dirbThreads: '{{ threads }}'
+  - ffTimeout: "2h"
+  - chan: '#mics'
+
+pre_run:
+  - CreateFolder("{{Output}}/directory")
+
+steps:
+  - required:
+      - "{{Binaries}}/ffuf-mod"
+      - "{{inputFile}}"
+    source: "{{inputFile}}"
+    threads: '{{dirbThreads}}'
+    commands:
+      - "timeout -k 1m {{ffTimeout}} {{Binaries}}/ffuf-mod  -t {{ffThreads}} -recursion-depth {{recursion}} -D -e 'asp,aspx,bat,c,cfm,cgi,css,com,dll,exe,htm,html,inc,jhtml,js,jsa,jsp,log,mdb,nsf,pcap,php,php2,php3,php4,php5,php6,php7,phps,pht,phtml,pl,reg,sh,shtml,sql,swf,txt,xml' -timeout 15 -get-hash -ac -s -fc '429,404,400' -of json -o {{Output}}/directory/raw-[[._id_]].json -u '[[.line]]/FUZZ' -w {{wordlists}}:FUZZ > /dev/null 2>&1"
+  - scripts:
+      - ExecCmd("cat {{Output}}/directory/raw-*.json | jq -r '[.url,(.status|tostring),(.length|tostring),(.words|tostring),(.lines|tostring),.hash,.redirectlocation] | join(\",\")' > {{Output}}/directory/beautify-{{Workspace}}.csv")
+      - ExecCmd("cat {{Output}}/directory/raw-*.json | {{Binaries}}/junique -k 'hash' | jq -r '[.url,(.status|tostring),(.length|tostring),(.words|tostring),(.lines|tostring),.hash,.redirectlocation] | join(\",\")' > {{Output}}/directory/unique-beautify-{{Workspace}}.csv")
+      - ExecCmd("rm -rf {{Output}}/directory/raw-*.json")
+      - ExecCmd("cat {{Output}}/directory/beautify-{{Workspace}}.csv | {{Binaries}}/csvtk cut -f 1,2,3,4,5,7 -I | {{Binaries}}/csvtk uniq -f 4 -I | {{Binaries}}/csvtk pretty --no-header-row -I -s ' | ' -W 75 > {{Output}}/directory/beautify-{{Workspace}}.txt")
+      - ExecCmd("cat {{Output}}/directory/unique-beautify-{{Workspace}}.csv | {{Binaries}}/csvtk cut -f 1,2,3,4,5,7 -I | {{Binaries}}/csvtk uniq -f 4 -I | {{Binaries}}/csvtk pretty --no-header-row -I -s ' | ' -W 75 > {{Output}}/directory/unique-beautify-{{Workspace}}.txt")
+      - TeleMessByFile("#dirb", "{{Output}}/directory/unique-beautify-{{Workspace}}.csv")
+      - Cat("{{Output}}/directory/unique-beautify-{{Workspace}}.txt")
+      - "Printf('==> The unfiltered result can be found at: {{Output}}/directory/beautify-{{Workspace}}.txt')"
+
+post_run:
+  - TotalDirb("{{Output}}/directory/beautify-{{Workspace}}.txt")

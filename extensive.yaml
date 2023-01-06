@@ -1,0 +1,42 @@
+name: extensive
+desc: Running extensive reconnaissance routine with in-depth module + bigger wordlists
+type: general
+validator: domain
+
+routines:
+  - flow: 'extensive'
+    modules:
+      - subdomain
+  - flow: 'extensive'
+    modules:
+      - probing
+  - flow: 'extensive'
+    modules:
+      - ssame
+  - modules:
+      - screenshot
+  - modules:
+      - sto
+      - fingerprint
+
+  - flow: 'extensive'
+    modules:
+      - spider
+      - archive
+  - modules:
+      - ipspace
+  - modules:
+      - vulnscan
+
+  - modules:
+      - portscan
+
+  - modules:
+      - port-fingerprint
+      - pvulnscan
+  - flow: 'extensive'
+    modules:
+      - dirbscan
+  # push final result again
+  - modules:
+      - summary

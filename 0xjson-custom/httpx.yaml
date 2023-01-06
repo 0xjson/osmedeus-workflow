@@ -1,0 +1,38 @@
+name: httpx
+desc: Probing HTTP Running
+
+report:
+  final:
+    - "{{Output}}/probing/http-{{Workspace}}.txt"
+
+pre_run:
+  - CreateFolder("{{Storages}}/summary/{{Workspace}}/")
+  - CreateFolder("{{Output}}/probing")
+
+params:
+  - finalSubdomainFile: "{{Output}}/subdomain/final-{{Workspace}}.txt"
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - axiomBinaries: "/root/.axiom/interact"
+
+steps:
+  # probing for http
+  - required:
+      - "{{axiomBinaries}}/axiom-scan"
+    commands:
+      - "{{axiomBinaries}}/axiom-scan {{finalSubdomainFile}} -m httpx -o {{httpFile}} --spinup 10 --rm-when-done"
+    scripts:
+      - "SortU('{{httpFile}}')"
+
+  ### for git storage only 
+  # join with old result
+  - required:
+      - "{{httpFile}}"
+    commands:
+      - "cat {{httpFile}} >> {{Storages}}/summary/{{Workspace}}/http-{{Workspace}}.txt"
+    scripts:
+      - ExecCmd("cat {{Storages}}/summary/{{Workspace}}/http-{{Workspace}}.txt >> {{httpFile}}")
+      - SortU("{{Storages}}/summary/{{Workspace}}/http-{{Workspace}}.txt")
+      - SortU("{{httpFile}}")
+
+post_run:
+  - TotalSubdomain('{{Output}}/probing/nonwild-{{Workspace}}.txt')

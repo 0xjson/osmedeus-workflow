@@ -1,0 +1,12 @@
+name: 0xjson-axiom
+desc: Running subdomain enumeration and dns resolving only
+type: 0xjson-custom
+validator: domain
+
+routines:
+  - modules:
+      - chaos
+  - modules:
+      - httpx
+  - modules:
+      - summary

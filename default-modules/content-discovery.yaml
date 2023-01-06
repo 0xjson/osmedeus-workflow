@@ -1,0 +1,46 @@
+name: content-discovery
+desc: Running content discovery with the supplied inputs
+validator: file
+
+report:
+  final:
+    - "{{Output}}/directory/beautify-{{Workspace}}.txt"
+
+params:
+  - inputFile: "{{Target}}"
+  - httpFile: "{{Output}}/directory/http-file.txt"
+  - wordlists: "{{Data}}/wordlists/content/medium.txt"
+  - ffThreads: '{{ threads * 2 }}' # threads for single site
+  - httpThreads: '{{ threads * 10 }}'
+  - dirbThreads: '{{ threads }}'
+  - recursion: '0'
+  - httpTimeout: '10'
+
+pre_run:
+  - CreateFolder("{{Output}}/directory")
+
+steps:
+  - required:
+      - "{{Binaries}}/httpx"
+    scripts:
+      - Printf('==> Clean up the input first if it hasn't have the prefix http(s)://')
+      - ExecCmd('cat {{inputFile}} | httpx -silent -t {{httpThreads}} -nf -timeout {{httpTimeout}} | tee -a {{httpFile}} > /dev/null 2>&1')
+      - SortU('{{httpFile}}')
+
+  - required:
+      - "{{Binaries}}/ffuf-mod"
+      - "{{httpFile}}"
+    source: "{{httpFile}}"
+    threads: '{{dirbThreads}}'
+    commands:
+      - "{{Binaries}}/ffuf-mod  -t {{ffThreads}} -recursion-depth {{recursion}} -D -e 'asp,aspx,bat,c,cfm,cgi,css,com,dll,exe,htm,html,inc,jhtml,js,jsa,jsp,log,mdb,nsf,pcap,php,php2,php3,php4,php5,php6,php7,phps,pht,phtml,pl,reg,sh,shtml,sql,swf,txt,xml' -timeout 15 -get-hash -ac -s -fc '429,404,400' -of json -o {{Output}}/directory/raw-[[._id_]].json -u '[[.line]]/FUZZ' -w {{wordlists}}:FUZZ > /dev/null 2>&1"
+
+  # clean up the output
+  - scripts:
+      - ExecCmd("cat {{Output}}/directory/raw-*.json | jq -r '[.url,(.status|tostring),(.length|tostring),(.words|tostring),(.lines|tostring),.hash,.redirectlocation] | join(\",\")' > {{Output}}/directory/beautify-{{Workspace}}.csv")
+      - ExecCmd("cat {{Output}}/directory/raw-*.json | {{Binaries}}/junique -k 'hash' | jq -r '[.url,(.status|tostring),(.length|tostring),(.words|tostring),(.lines|tostring),.hash,.redirectlocation] | join(\",\")' > {{Output}}/directory/unique-beautify-{{Workspace}}.csv")
+      - ExecCmd("rm -rf {{Output}}/directory/raw-*.json")
+      - ExecCmd("cat {{Output}}/directory/beautify-{{Workspace}}.csv | {{Binaries}}/csvtk cut -f 1,2,3,4,5,7 -I | {{Binaries}}/csvtk uniq -f 4 -I | {{Binaries}}/csvtk pretty --no-header-row -I -s ' | ' -W 75 > {{Output}}/directory/beautify-{{Workspace}}.txt")
+      - ExecCmd("cat {{Output}}/directory/unique-beautify-{{Workspace}}.csv | {{Binaries}}/csvtk cut -f 1,2,3,4,5,7 -I | {{Binaries}}/csvtk uniq -f 4 -I | {{Binaries}}/csvtk pretty --no-header-row -I -s ' | ' -W 75 > {{Output}}/directory/unique-beautify-{{Workspace}}.txt")
+      - Cat("{{Output}}/directory/unique-beautify-{{Workspace}}.txt")
+      - "Printf('==> The unfiltered result can be found at: {{Output}}/directory/beautify-{{Workspace}}.txt')"

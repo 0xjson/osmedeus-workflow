@@ -1,0 +1,42 @@
+name: ssame
+desc: Detect same site by calculate content structure
+
+report:
+  final:
+    - "{{Output}}/probing/diffhttp-{{Workspace}}.txt"
+
+pre_run:
+  - CreateFolder("{{Output}}/probing")
+
+params:
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - domainFile: "{{Output}}/probing/subdomain-{{Workspace}}.txt"
+  - ssthreads: "{{ threads * 12}}"
+  - ssTimeout: "2h"
+
+steps:
+  # request only
+  - required:
+      - "{{Binaries}}/SSame"
+      - "{{httpFile}}"
+    commands:
+      - "timeout -k 1m {{ssTimeout}} {{Binaries}}/SSame scan -i {{httpFile}} -t {{ssthreads}} -k 15 -g {{Output}}/probing/SSame-{{Workspace}}.log"
+    # Analysis the result
+    scripts:
+      - ExecCmd("{{Binaries}}/SSame analysis -f {{Output}}/probing/SSame-{{Workspace}}.log")
+
+  # get http target
+  - required:
+      - "{{Output}}/probing/SSame-{{Workspace}}.log"
+    commands:
+      - "cat {{Output}}/probing/SSame-{{Workspace}}.log | cut -d ',' -f1 | grep '{{Target}}' | LC_ALL=C sort -u > {{Output}}/probing/diffhttp-{{Workspace}}.txt"
+    # grep for more subdomains based on content file
+    scripts:
+      - ExecCmd("cat {{Output}}/probing/diffhttp-{{Workspace}}.txt | cut -d ',' -f1  | unfurl format %d >> {{domainFile}}")
+      - SortU("{{domainFile}}")
+
+  # in case we mess up this module
+  - conditions:
+    - FileLength('{{Output}}/probing/diffhttp-{{Workspace}}.txt') <= 0
+    commands:
+      - "cp {{httpFile}} {{Output}}/probing/diffhttp-{{Workspace}}.txt"
