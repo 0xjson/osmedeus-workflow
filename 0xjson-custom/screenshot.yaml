@@ -1,34 +1,34 @@
 name: screenshot
-desc: Screenshot based on result of probing
+desc: screenshot based on result of probing
 
 report:
   final:
     - "{{Output}}/screenshot/{{Workspace}}-aquatone/screenshot-{{Workspace}}.html"
     - "{{Output}}/screenshot/goverview/report.html"
 
-params:
-  - diffHttpFile: "{{Output}}/probing/diffhttp-{{Workspace}}.txt"
-  - screenThreads: "{{ threads * 2}}"
-
-# {{Output}} == {{Workspaces}} + {{Workspace}} but strip "/" char
 pre_run:
-  - CreateFolder("{{Output}}/screenshot")
+    - "CreateFolder('{{Output}}/screenshot')"
+    - "CreateFolder('{{Output}}/screenshot/{{Workspace}}-aquatone/')"
+
+params:
+    - diffHttpFile: "{{Output}}/probing/diffhttp-{{Workspace}}.txt"
+    - axiomBinaries: "/root/.axiom/interact"
 
 steps:
+  - commands: 
+      - "{{axiomBinaries}}/axiom-fleet osmedeus -i 1"
+
   - required:
-      - "{{Binaries}}/aquatone"
+      - "{{axiomBinaries}}/axiom-scan"
       - "{{diffHttpFile}}"
-    commands: 
-      - "cat {{diffHttpFile}} | {{Binaries}}/aquatone -threads {{screenThreads}} -out {{Output}}/screenshot/{{Workspace}}-aquatone > /dev/null 2>&1"
-  # change html report name
+    commands:
+      - "{{axiomBinaries}}/axiom-scan {{diffHttpFile}} -m aquatone -o {{Output}}/screenshot/{{Workspace}}-aquatone --fleet 'osmedeus*' --rm-when-done"
+    scripts:
+      - "CreateFolder('{{Output}}/screenshot/{{Workspace}}-aquatone/screenshots/')"
+
   - commands:
       - "mv {{Output}}/screenshot/{{Workspace}}-aquatone/aquatone_report.html {{Output}}/screenshot/{{Workspace}}-aquatone/screenshot-{{Workspace}}.html"
+      - "mv {{Output}}/screenshot/{{Workspace}}-aquatone/*.png {{Output}}/screenshot/{{Workspace}}-aquatone/screenshots/"
       - "ls {{Output}}/screenshot/{{Workspace}}-aquatone/screenshots/ > {{Output}}/screenshot/number-of-screenshot.txt"
-
-  # do screenshot with goverview
-  - scripts:
-      - ExecCmd("cat {{diffHttpFile}} | {{Binaries}}/goverview screen -c 5 --json -o {{Output}}/screenshot/goverview/")
-      - ExecCmd("{{Binaries}}/goverview report -o {{Output}}/screenshot/goverview/ --report report.html")
-
 post_run:
-  - TotalScreenShot('{{Output}}/screenshot/number-of-screenshot.txt')
+  - "TotalScreenShot('{{Output}}/screenshot/number-of-screenshot.txt')"
